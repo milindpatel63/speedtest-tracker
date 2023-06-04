@@ -1,10 +1,10 @@
-FROM serversideup/php:8.1-fpm-nginx
+FROM milindpatel63/php:8.1-fpm-nginx
 
 # Add /config to allowed directory tree
 ENV PHP_OPEN_BASEDIR=$WEBUSER_HOME:/config/:/dev/stdout:/tmp
 
 # Enable mixed ssl mode so port 80 or 443 can be used
-ENV SSL_MODE="mixed"
+ENV SSL_MODE="off"
 
 # Install addition packages and cron file
 RUN apt-get update \
