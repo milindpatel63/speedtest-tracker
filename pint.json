@@ -1,3 +1,9 @@
 {
-    "preset": "laravel"
+    "preset": "laravel",
+    "exclude": [
+        "config"
+    ],
+    "rules": {
+        "fully_qualified_strict_types": false
+    }
 }

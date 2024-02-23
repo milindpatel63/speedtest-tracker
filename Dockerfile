@@ -8,7 +8,10 @@ ENV SSL_MODE="off"
 
 # Install addition packages and cron file
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends cron gnupg php8.1-gd php8.1-pgsql \
+    && apt-get install -y --no-install-recommends \
+        cron \
+        htop \
+        php8.2-pgsql \
     && echo "MAILTO=\"\"\n* * * * * webuser /usr/bin/php /var/www/html/artisan schedule:run" > /etc/cron.d/laravel \
     \
 # Install Speedtest cli
@@ -20,17 +23,19 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
 
 # Copy package configs
-COPY --chmod=755 docker/deploy/etc/s6-overlay/ /etc/s6-overlay/
-
-WORKDIR /var/www/html
+COPY --chmod=755 docker/deploy/etc /etc
 
 # Copy app
-COPY --chown=webuser:webgroup . /var/www/html
+COPY --chown=webuser:webgroup . $WEBUSER_HOME
+
+WORKDIR $WEBUSER_HOME
 
 # Install app dependencies
-RUN composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev --no-cache \
-    && mkdir -p storage/logs \
-    && php artisan optimize:clear \
-    && chown -R webuser:webgroup /var/www/html
+RUN composer install \
+    --no-interaction \
+    --prefer-dist \
+    --optimize-autoloader \
+    --no-dev \
+    --no-cache
 
 VOLUME /config

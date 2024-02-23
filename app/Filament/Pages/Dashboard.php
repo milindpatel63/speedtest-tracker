@@ -2,96 +2,77 @@
 
 namespace App\Filament\Pages;
 
-use App\Filament\Widgets\RecentJitterChart;
-use App\Filament\Widgets\RecentPingChart;
-use App\Filament\Widgets\RecentSpeedChart;
-use App\Filament\Widgets\StatsOverview;
-use App\Jobs\ExecSpeedtest;
-use App\Models\Result;
+use App\Console\Commands\RunOoklaSpeedtest;
+use App\Filament\Widgets\RecentDownloadChartWidget;
+use App\Filament\Widgets\RecentJitterChartWidget;
+use App\Filament\Widgets\RecentPingChartWidget;
+use App\Filament\Widgets\RecentUploadChartWidget;
+use App\Filament\Widgets\StatsOverviewWidget;
 use App\Settings\GeneralSettings;
+use Filament\Actions\Action;
 use Filament\Notifications\Notification;
-use Filament\Pages\Actions\Action;
 use Filament\Pages\Dashboard as BasePage;
-use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\Artisan;
 
 class Dashboard extends BasePage
 {
-    public string $lastResult = 'never';
+    public bool $publicDashboard = false;
 
-    public int $resultsCount;
+    protected static ?string $pollingInterval = null;
+
+    protected static ?string $navigationIcon = 'heroicon-o-chart-bar';
+
+    protected static ?int $navigationSort = 1;
 
     protected static string $view = 'filament.pages.dashboard';
 
-    public function render(): View
-    {
-        $this->resultsCount = Result::count();
-
-        if ($this->resultsCount) {
-            $result = Result::latest()
-                ->first();
-
-            $settings = new GeneralSettings();
-
-            $this->lastResult = $result->created_at
-                ->timezone($settings->timezone)
-                ->format($settings->time_format);
-        }
-
-        return view(static::$view, $this->getViewData())
-            ->layout(static::$layout, $this->getLayoutData());
-    }
-
-    protected function getMaxContentWidth(): string
+    public function mount()
     {
         $settings = new GeneralSettings();
 
-        return $settings->content_width;
+        $this->publicDashboard = $settings->public_dashboard_enabled;
     }
 
-    protected function getActions(): array
+    protected function getHeaderActions(): array
     {
         return [
+            Action::make('home')
+                ->label('Public Dashboard')
+                ->color('gray')
+                ->hidden(! $this->publicDashboard)
+                ->url('/'),
             Action::make('speedtest')
                 ->label('Queue Speedtest')
-                ->action('queueSpeedtest'),
+                ->color('primary')
+                ->action('queueSpeedtest')
+                ->hidden(fn (): bool => ! auth()->user()->is_admin && ! auth()->user()->is_user),
         ];
     }
 
-    public function getHeaderWidgets(): array
+    protected function getHeaderWidgets(): array
     {
         return [
-            StatsOverview::class,
+            StatsOverviewWidget::make(),
+            RecentDownloadChartWidget::make(),
+            RecentUploadChartWidget::make(),
+            RecentPingChartWidget::make(),
+            RecentJitterChartWidget::make(),
         ];
     }
 
-    public function getFooterWidgets(): array
+    public function queueSpeedtest(): void
     {
-        if (! $this->resultsCount) {
-            return [];
+        try {
+            Artisan::call(RunOoklaSpeedtest::class);
+        } catch (\Throwable $th) {
+            Notification::make()
+                ->title('Manual speedtest failed!')
+                ->body('The starting a manual speedtest failed, check the logs.')
+                ->warning()
+                ->sendToDatabase(auth()->user());
+
+            return;
         }
-
-        return [
-            RecentSpeedChart::class,
-            RecentPingChart::class,
-            RecentJitterChart::class,
-        ];
-    }
-
-    public function queueSpeedtest(GeneralSettings $settings)
-    {
-        $ookla_server_id = null;
-
-        if (! blank($settings->speedtest_server)) {
-            $item = array_rand($settings->speedtest_server);
-
-            $ookla_server_id = $settings->speedtest_server[$item];
-        }
-
-        $speedtest = [
-            'ookla_server_id' => $ookla_server_id,
-        ];
-
-        ExecSpeedtest::dispatch(speedtest: $speedtest, scheduled: false);
 
         Notification::make()
             ->title('Speedtest added to the queue')

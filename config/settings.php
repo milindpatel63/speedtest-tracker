@@ -11,6 +11,11 @@ return [
     ],
 
     /*
+     * The path where the settings classes will be created.
+     */
+    'setting_class_path' => app_path('Settings'),
+
+    /*
      * In these directories settings migrations will be stored and ran when migrating. A settings
      * migration created via the make:settings-migration command will be stored in the first path or
      * a custom defined path when running the command.
@@ -48,8 +53,8 @@ return [
      * additional prefix.
      */
     'cache' => [
-        'enabled' => env('SETTINGS_CACHE_ENABLED', false),
-        'store' => null,
+        'enabled' => env('SETTINGS_CACHE_ENABLED', true),
+        'store' => env('CACHE_DRIVER', 'database'),
         'prefix' => null,
         'ttl' => null,
     ],
@@ -61,7 +66,8 @@ return [
     'global_casts' => [
         DateTimeInterface::class => Spatie\LaravelSettings\SettingsCasts\DateTimeInterfaceCast::class,
         DateTimeZone::class => Spatie\LaravelSettings\SettingsCasts\DateTimeZoneCast::class,
-        Spatie\DataTransferObject\DataTransferObject::class => Spatie\LaravelSettings\SettingsCasts\DtoCast::class,
+        // Spatie\DataTransferObject\DataTransferObject::class => Spatie\LaravelSettings\SettingsCasts\DtoCast::class,
+        // Spatie\LaravelData\Data::class => Spatie\LaravelSettings\SettingsCasts\DataCast::class,
     ],
 
     /*
@@ -69,12 +75,12 @@ return [
      * register them.
      */
     'auto_discover_settings' => [
-        app()->path(),
+        app_path('Settings'),
     ],
 
     /*
-     * Automatically discovered settings classes can be cached so they don't
+     * Automatically discovered settings classes can be cached, so they don't
      * need to be searched each time the application boots up.
      */
-    'discovered_settings_cache_path' => storage_path('app/laravel-settings'),
+    'discovered_settings_cache_path' => base_path('bootstrap/cache'),
 ];

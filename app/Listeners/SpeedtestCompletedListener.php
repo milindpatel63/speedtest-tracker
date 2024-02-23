@@ -9,6 +9,7 @@ use App\Settings\NotificationSettings;
 use App\Telegram\TelegramNotification;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Mail;
+use Spatie\WebhookServer\WebhookCall;
 
 class SpeedtestCompletedListener
 {
@@ -70,6 +71,47 @@ class SpeedtestCompletedListener
 
                     \Illuminate\Support\Facades\Notification::route('telegram_chat_id', $recipient['telegram_chat_id'])
                         ->notify(new TelegramNotification($message));
+                }
+            }
+        }
+
+        if ($this->notificationSettings->discord_enabled) {
+            if ($this->notificationSettings->discord_on_speedtest_run && count($this->notificationSettings->discord_webhooks)) {
+                foreach ($this->notificationSettings->discord_webhooks as $webhook) {
+                    // Construct the payload
+                    $payload = [
+                        'content' => 'There are new speedtest results for your network.'.
+                                        "\nResult ID: ".$event->result->id.
+                                        "\nSite Name: ".$this->generalSettings->site_name.
+                                        "\nPing: ".$event->result->ping.' ms'.
+                                        "\nDownload: ".($event->result->downloadBits / 1000000).' (Mbps)'.
+                                        "\nUpload: ".($event->result->uploadBits / 1000000).' (Mbps)',
+                    ];
+                    // Send the payload using WebhookCall
+                    WebhookCall::create()
+                        ->url($webhook['url'])
+                        ->payload($payload)
+                        ->doNotSign()
+                        ->dispatch();
+
+                }
+            }
+        }
+
+        if ($this->notificationSettings->webhook_enabled) {
+            if ($this->notificationSettings->webhook_on_speedtest_run && count($this->notificationSettings->webhook_urls)) {
+                foreach ($this->notificationSettings->webhook_urls as $url) {
+                    WebhookCall::create()
+                        ->url($url['url'])
+                        ->payload([
+                            'result_id' => $event->result->id,
+                            'site_name' => $this->generalSettings->site_name,
+                            'ping' => $event->result->ping,
+                            'download' => $event->result->downloadBits,
+                            'upload' => $event->result->uploadBits,
+                        ])
+                        ->doNotSign()
+                        ->dispatch();
                 }
             }
         }

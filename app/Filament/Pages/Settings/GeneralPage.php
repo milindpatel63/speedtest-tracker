@@ -2,15 +2,15 @@
 
 namespace App\Filament\Pages\Settings;
 
+use App\Actions\GetOoklaSpeedtestServers;
+use App\Helpers\TimeZoneHelper;
 use App\Rules\Cron;
 use App\Settings\GeneralSettings;
-use Filament\Forms\Components\Grid;
-use Filament\Forms\Components\Section;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
+use Filament\Forms;
+use Filament\Forms\Form;
 use Filament\Pages\SettingsPage;
 use Illuminate\Support\Facades\Http;
-use Squire\Models\Timezone;
+use Illuminate\Support\HtmlString;
 
 class GeneralPage extends SettingsPage
 {
@@ -26,134 +26,142 @@ class GeneralPage extends SettingsPage
 
     protected static string $settings = GeneralSettings::class;
 
-    protected function getMaxContentWidth(): string
+    public function mount(): void
     {
-        $settings = new GeneralSettings();
+        parent::mount();
 
-        return $settings->content_width;
+        abort_unless(auth()->user()->is_admin, 403);
     }
 
-    protected function getFormSchema(): array
+    public static function shouldRegisterNavigation(): bool
     {
-        return [
-            Grid::make([
-                'default' => 1,
-                'md' => 3,
-            ])
-                ->schema([
-                    Grid::make([
-                        'default' => 1,
+        return auth()->user()->is_admin;
+    }
+
+    public function form(Form $form): Form
+    {
+        return $form
+            ->schema([
+                Forms\Components\Grid::make([
+                    'default' => 1,
+                ])
+                    ->schema([
+                        Forms\Components\Section::make('Site Settings')
+                            ->schema([
+                                Forms\Components\TextInput::make('site_name')
+                                    ->maxLength(50)
+                                    ->required()
+                                    ->columnSpanFull(),
+                                Forms\Components\Toggle::make('public_dashboard_enabled')
+                                    ->label('Public dashboard'),
+                            ])
+                            ->compact()
+                            ->columns([
+                                'default' => 1,
+                                'md' => 2,
+                            ]),
+
+                        Forms\Components\Section::make('Time Zone Settings')
+                            ->schema([
+                                Forms\Components\Select::make('timezone')
+                                    ->label('Time zone')
+                                    ->hint(new HtmlString('&#x1f517;<a href="https://docs.speedtest-tracker.dev/" target="_blank" rel="nofollow">Docs</a>'))
+                                    ->options(TimeZoneHelper::list())
+                                    ->searchable()
+                                    ->required(),
+                                Forms\Components\TextInput::make('time_format')
+                                    ->hint(new HtmlString('&#x1f517;<a href="https://www.php.net/manual/en/datetime.format.php" target="_blank" rel="nofollow">DateTime Format</a>'))
+                                    ->placeholder('M j, Y G:i:s')
+                                    ->maxLength(25)
+                                    ->required(),
+                                Forms\Components\Toggle::make('db_has_timezone')
+                                    ->label('Database has time zone')
+                                    ->helperText(new HtmlString('Enable if your database <strong>has</strong> a time zone already set.')),
+                            ])
+                            ->compact()
+                            ->columns([
+                                'default' => 1,
+                                'md' => 2,
+                            ]),
+
+                        Forms\Components\Section::make('Speedtest Settings')
+                            ->schema([
+                                Forms\Components\TextInput::make('speedtest_schedule')
+                                    ->rules([new Cron()])
+                                    ->helperText('Leave empty to disable scheduled tests.')
+                                    ->hint(new HtmlString('&#x1f517;<a href="https://crontab.cronhub.io/" target="_blank" rel="nofollow">Cron Generator</a>'))
+                                    ->nullable()
+                                    ->columnSpan(1),
+                                Forms\Components\TextInput::make('prune_results_older_than')
+                                    ->helperText('Set to zero to disable pruning.')
+                                    ->suffix('days')
+                                    ->numeric()
+                                    ->required()
+                                    ->minValue(0)
+                                    ->maxValue(9999)
+                                    ->columnSpan(1),
+                                Forms\Components\Select::make('speedtest_server')
+                                    ->label('Speedtest servers')
+                                    ->helperText('Leave empty to let the system pick the best server.')
+                                    ->maxItems(10)
+                                    ->multiple()
+                                    ->nullable()
+                                    ->searchable()
+                                    ->options(GetOoklaSpeedtestServers::run())
+                                    ->getSearchResultsUsing(fn (string $search): array => $this->getServerSearchOptions($search))
+                                    ->getOptionLabelsUsing(fn (array $values): array => $this->getServerLabels($values))
+                                    ->columnSpanFull(),
+                            ])
+                            ->compact()
+                            ->columns([
+                                'default' => 1,
+                                'md' => 2,
+                            ]),
                     ])
-                        ->schema([
-                            Section::make('Site Settings')
-                                ->schema([
-                                    TextInput::make('site_name')
-                                        ->maxLength(50)
-                                        ->required()
-                                        ->columnSpan(['md' => 2]),
-                                    Select::make('timezone')
-                                        ->options(Timezone::all()->pluck('code', 'code'))
-                                        ->searchable()
-                                        ->required(),
-                                    TextInput::make('time_format')
-                                        ->helperText('Use [DateTime Format](https://www.php.net/manual/en/datetime.format.php) options to change the format of the datetime in views.')
-                                        ->placeholder('M j, Y G:i:s')
-                                        ->maxLength(25)
-                                        ->required(),
-                                    Select::make('content_width')
-                                        ->options([
-                                            '7xl' => 'Default width',
-                                            'full' => 'Full width',
-                                        ]),
-                                ])
-                                ->compact()
-                                ->columns([
-                                    'default' => 1,
-                                    'md' => 2,
-                                ]),
+                    ->columnSpan('full'),
+            ]);
+    }
 
-                            Section::make('Speedtest Settings')
-                                ->schema([
-                                    TextInput::make('speedtest_schedule')
-                                        ->rules([new Cron()])
-                                        ->helperText('Leave empty to disable the schedule. You can also use the cron expression generator [HERE](https://crontab.cronhub.io/) to help you make schedules.')
-                                        ->nullable()
-                                        ->columnSpan(1),
-                                    Select::make('speedtest_server')
-                                        ->label('Speedtest server ID')
-                                        ->helperText('Leave empty to let the system pick the best server.')
-                                        ->nullable()
-                                        ->multiple()
-                                        ->maxItems(10)
-                                        ->searchable()
-                                        ->options(function () {
-                                            $response = Http::get(
-                                                url: 'https://www.speedtest.net/api/js/servers',
-                                                query: [
-                                                    'engine' => 'js',
-                                                    'https_functional' => true,
-                                                    'limit' => 10,
-                                                ]
-                                            );
+    protected function getServerLabels(array $values): array
+    {
+        if (count($values) && is_null($values[0])) {
+            return [];
+        }
 
-                                            if ($response->failed()) {
-                                                return [
-                                                    '' => 'There was an error retrieving Speedtest servers',
-                                                ];
-                                            }
+        return collect($values)->mapWithKeys(function (string $item, int $key) {
+            return [$item => $item];
+        })->toArray();
+    }
 
-                                            return $response->collect()->map(function ($item) {
-                                                return [
-                                                    'id' => $item['id'],
-                                                    'name' => $item['id'].': '.$item['name'].' ('.$item['sponsor'].')',
-                                                ];
-                                            })->pluck('name', 'id');
-                                        })
-                                        ->getSearchResultsUsing(function (string $search) {
-                                            $response = Http::get(
-                                                url: 'https://www.speedtest.net/api/js/servers',
-                                                query: [
-                                                    'engine' => 'js',
-                                                    'search' => $search,
-                                                    'https_functional' => true,
-                                                    'limit' => 10,
-                                                ]
-                                            );
+    protected function getServerSearchOptions(string $search): array
+    {
+        $response = Http::get(
+            url: 'https://www.speedtest.net/api/js/servers',
+            query: [
+                'engine' => 'js',
+                'search' => $search,
+                'https_functional' => true,
+                'limit' => 20,
+            ]
+        );
 
-                                            if ($response->failed()) {
-                                                return [
-                                                    '' => 'There was an error retrieving Speedtest servers',
-                                                ];
-                                            }
+        if ($response->failed()) {
+            return [
+                '' => 'There was an error retrieving Speedtest servers',
+            ];
+        }
 
-                                            if (! $response->collect()->count() && is_numeric($search)) {
-                                                return collect([
-                                                    [
-                                                        'id' => $search,
-                                                        'name' => $search.': No server found, manually add this ID.',
-                                                    ],
-                                                ]);
-                                            }
+        if (! $response->collect()->count() && is_numeric($search)) {
+            return collect([
+                [
+                    'id' => $search,
+                    'name' => $search.' (Manually entered server)',
+                ],
+            ])->pluck('name', 'id')->toArray();
+        }
 
-                                            return $response->collect()->map(function ($item) {
-                                                return [
-                                                    'id' => $item['id'],
-                                                    'name' => $item['id'].': '.$item['name'].' ('.$item['sponsor'].')',
-                                                ];
-                                            })->pluck('name', 'id');
-                                        })
-                                        ->columnSpan(2),
-                                ])
-                                ->compact()
-                                ->columns([
-                                    'default' => 1,
-                                    'md' => 2,
-                                ]),
-                        ])
-                        ->columnSpan([
-                            'md' => 2,
-                        ]),
-                ]),
-        ];
+        return $response->collect()->mapWithKeys(function (array $item, int $key) {
+            return [$item['id'] => $item['id'].': '.$item['name'].' ('.$item['sponsor'].')'];
+        })->toArray();
     }
 }

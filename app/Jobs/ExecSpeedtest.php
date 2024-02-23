@@ -2,18 +2,19 @@
 
 namespace App\Jobs;
 
+use App\Enums\ResultStatus;
 use App\Models\Result;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 
-class ExecSpeedtest implements ShouldQueue, ShouldBeUnique
+class ExecSpeedtest implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -23,7 +24,7 @@ class ExecSpeedtest implements ShouldQueue, ShouldBeUnique
      * @return void
      */
     public function __construct(
-        public array|null $speedtest = null,
+        public ?array $speedtest = null,
         public bool $scheduled = false
     ) {
     }
@@ -51,28 +52,26 @@ class ExecSpeedtest implements ShouldQueue, ShouldBeUnique
             $message = collect(array_filter($messages, 'json_validate'))->last();
 
             Result::create([
+                'service' => 'ookla',
+                'data' => json_decode($message, true),
+                'status' => ResultStatus::Failed,
                 'scheduled' => $this->scheduled,
-                'successful' => false,
-                'data' => $message,
             ]);
 
             return;
         }
 
         try {
-            $output = $process->getOutput();
-            $results = json_decode($output, true);
+            $results = json_decode($process->getOutput(), true);
 
             Result::create([
-                'ping' => $results['ping']['latency'],
-                'download' => $results['download']['bandwidth'],
-                'upload' => $results['upload']['bandwidth'],
-                'server_id' => $results['server']['id'],
-                'server_name' => $results['server']['name'],
-                'server_host' => $results['server']['host'].':'.$results['server']['port'],
-                'url' => $results['result']['url'],
+                'service' => 'ookla',
+                'ping' => Arr::get($results, 'ping.latency'),
+                'download' => Arr::get($results, 'download.bandwidth'),
+                'upload' => Arr::get($results, 'upload.bandwidth'),
+                'data' => $results,
+                'status' => ResultStatus::Completed,
                 'scheduled' => $this->scheduled,
-                'data' => $output,
             ]);
         } catch (\Exception $e) {
             Log::error($e->getMessage());

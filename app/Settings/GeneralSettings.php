@@ -8,7 +8,7 @@ class GeneralSettings extends Settings
 {
     public bool $auth_enabled;
 
-    public string $content_width;
+    public int $prune_results_older_than;
 
     public ?string $speedtest_schedule;
 
@@ -20,6 +20,10 @@ class GeneralSettings extends Settings
     public string $time_format;
 
     public string $timezone;
+
+    public bool $db_has_timezone;
+
+    public bool $public_dashboard_enabled;
 
     public static function group(): string
     {
