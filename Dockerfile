@@ -1,5 +1,5 @@
 #FROM milindpatel63/php:8.1-fpm-nginx
-FROM milindpatel63/php:8.2-fpm-nginx-v2.2.1
+FROM milindpatel63/php:8.2-fpm-nginx
 # Add /config to allowed directory tree
 ENV PHP_OPEN_BASEDIR=$WEBUSER_HOME:/config/:/dev/stdout:/tmp
 
