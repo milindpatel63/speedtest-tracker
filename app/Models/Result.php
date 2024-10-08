@@ -3,8 +3,6 @@
 namespace App\Models;
 
 use App\Enums\ResultStatus;
-use App\Events\ResultCreated;
-use App\Settings\GeneralSettings;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -24,24 +22,18 @@ class Result extends Model
     protected $guarded = [];
 
     /**
-     * The attributes that should be cast.
+     * Get the attributes that should be cast.
      *
-     * @var array
+     * @return array<string, string>
      */
-    protected $casts = [
-        'data' => 'array',
-        'status' => ResultStatus::class,
-        'scheduled' => 'boolean',
-    ];
-
-    /**
-     * Event mapping for the model.
-     *
-     * @var array
-     */
-    protected $dispatchesEvents = [
-        'created' => ResultCreated::class,
-    ];
+    protected function casts(): array
+    {
+        return [
+            'data' => 'array',
+            'status' => ResultStatus::class,
+            'scheduled' => 'boolean',
+        ];
+    }
 
     /**
      * The tag attributes to be passed to influxdb
@@ -70,9 +62,17 @@ class Result extends Model
             'ping_jitter' => $this->ping_jitter,
             'download_jitter' => $this->download_jitter,
             'upload_jitter' => $this->upload_jitter,
+            'download_latency_avg' => $this->download_latency_iqm,
+            'download_latency_low' => $this->download_latency_low,
+            'download_latency_high' => $this->download_latency_high,
+            'upload_latency_avg' => $this->upload_latency_iqm,
+            'upload_latency_low' => $this->upload_latency_low,
+            'upload_latency_high' => $this->upload_latency_high,
             'server_id' => $this?->server_id,
+            'isp' => $this?->isp,
             'server_host' => $this?->server_host,
             'server_name' => $this?->server_name,
+            'server_location' => $this?->server_location,
             'scheduled' => $this->scheduled,
             'successful' => $this->status === ResultStatus::Completed,
             'packet_loss' => (float) $this->packet_loss,
@@ -84,9 +84,7 @@ class Result extends Model
      */
     public function prunable(): Builder
     {
-        $settings = new GeneralSettings();
-
-        return static::where('created_at', '<=', now()->subDays($settings->prune_results_older_than));
+        return static::where('created_at', '<=', now()->subDays(config('speedtest.prune_results_older_than')));
     }
 
     /**
@@ -108,6 +106,36 @@ class Result extends Model
     {
         return Attribute::make(
             get: fn () => Arr::get($this->data, 'download.latency.jitter'),
+        );
+    }
+
+    /**
+     * Get the result's download latency high in milliseconds.
+     */
+    protected function downloadlatencyHigh(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => Arr::get($this->data, 'download.latency.high'),
+        );
+    }
+
+    /**
+     * Get the result's download latency low in milliseconds.
+     */
+    protected function downloadlatencyLow(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => Arr::get($this->data, 'download.latency.low'),
+        );
+    }
+
+    /**
+     * Get the result's download latency iqm in milliseconds.
+     */
+    protected function downloadlatencyiqm(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => Arr::get($this->data, 'download.latency.iqm'),
         );
     }
 
@@ -202,6 +230,16 @@ class Result extends Model
     }
 
     /**
+     * Get the result's server location.
+     */
+    protected function serverLocation(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => Arr::get($this->data, 'server.location'),
+        );
+    }
+
+    /**
      * Get the result's upload in bits.
      */
     protected function uploadBits(): Attribute
@@ -220,6 +258,36 @@ class Result extends Model
     {
         return Attribute::make(
             get: fn () => Arr::get($this->data, 'upload.latency.jitter'),
+        );
+    }
+
+    /**
+     * Get the result's upload latency high in milliseconds.
+     */
+    protected function uploadlatencyHigh(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => Arr::get($this->data, 'upload.latency.high'),
+        );
+    }
+
+    /**
+     * Get the result's upload latency low in milliseconds.
+     */
+    protected function uploadlatencyLow(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => Arr::get($this->data, 'upload.latency.low'),
+        );
+    }
+
+    /**
+     * Get the result's upload latency iqm in milliseconds.
+     */
+    protected function uploadlatencyiqm(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => Arr::get($this->data, 'upload.latency.iqm'),
         );
     }
 }

@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
+use App\Enums\UserRole;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -39,14 +39,18 @@ class User extends Authenticatable implements FilamentUser
     ];
 
     /**
-     * The attributes that should be cast.
+     * Get the attributes that should be cast.
      *
-     * @var array<string, string>
+     * @return array<string, string>
      */
-    protected $casts = [
-        'email_verified_at' => 'datetime',
-        'password' => 'hashed',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+            'role' => UserRole::class,
+        ];
+    }
 
     /**
      * Any user can access the Filament admin panel.
@@ -62,7 +66,7 @@ class User extends Authenticatable implements FilamentUser
     protected function isAdmin(): Attribute
     {
         return Attribute::make(
-            get: fn (mixed $value, array $attributes): bool => $attributes['role'] == 'admin',
+            get: fn (): bool => $this->role === UserRole::Admin,
         );
     }
 
@@ -72,7 +76,7 @@ class User extends Authenticatable implements FilamentUser
     protected function isUser(): Attribute
     {
         return Attribute::make(
-            get: fn (mixed $value, array $attributes): bool => $attributes['role'] == 'user',
+            get: fn (): bool => $this->role === UserRole::User,
         );
     }
 }

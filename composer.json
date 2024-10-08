@@ -8,43 +8,42 @@
     ],
     "license": "MIT",
     "require": {
-        "php": "^8.1",
+        "php": "^8.2",
         "awcodes/filament-versions": "^2.0.1",
         "chrisullyott/php-filesize": "^4.2.1",
-        "doctrine/dbal": "^3.8.2",
         "dragonmantank/cron-expression": "^3.3.3",
-        "filament/filament": "^3.2.35",
-        "filament/spatie-laravel-settings-plugin": "^3.2.35",
-        "guzzlehttp/guzzle": "^7.8.1",
-        "influxdata/influxdb-client-php": "^3.4",
-        "laravel-notification-channels/telegram": "^4.0",
-        "laravel/framework": "^10.45.1",
-        "laravel/prompts": "^0.1.15",
-        "laravel/sanctum": "^3.3.3",
-        "laravel/tinker": "^2.9.0",
-        "livewire/livewire": "^3.4.6",
-        "lorisleiva/laravel-actions": "^2.7.3",
+        "filament/filament": "^3.2.114",
+        "filament/spatie-laravel-settings-plugin": "^3.2.114",
+        "geerlingguy/ping": "^1.2.1",
+        "guzzlehttp/guzzle": "^7.9.2",
+        "influxdata/influxdb-client-php": "^3.6",
+        "laravel-notification-channels/telegram": "^5.0",
+        "laravel/framework": "^11.24.1",
+        "laravel/prompts": "^0.2.1",
+        "laravel/sanctum": "^4.0.2",
+        "laravel/tinker": "^2.10.0",
+        "livewire/livewire": "^3.5.4",
+        "lorisleiva/laravel-actions": "^2.8.4",
         "maennchen/zipstream-php": "^2.4",
-        "spatie/laravel-settings": "^2.8.3",
+        "spatie/laravel-settings": "^3.4",
         "spatie/laravel-webhook-server": "^3.8.1",
-        "timokoerber/laravel-one-time-operations": "^1.4"
+        "timokoerber/laravel-one-time-operations": "^1.4.2"
     },
     "require-dev": {
-        "barryvdh/laravel-ide-helper": "^2.15.1",
+        "barryvdh/laravel-ide-helper": "^3.1",
         "fakerphp/faker": "^1.23.1",
-        "laravel/pint": "^1.14.0",
-        "laravel/sail": "^1.28.0",
-        "laravel/telescope": "^4.17.6",
-        "mockery/mockery": "^1.6.7",
-        "nunomaduro/collision": "^7.10.0",
-        "phpunit/phpunit": "^10.5.10",
-        "spatie/laravel-ignition": "^2.4.2",
-        "tightenco/duster": "^2.7.3"
+        "laravel/pint": "^1.18.1",
+        "laravel/sail": "^1.33.0",
+        "laravel/telescope": "^5.2.2",
+        "mockery/mockery": "^1.6.12",
+        "nunomaduro/collision": "^8.4.0",
+        "phpunit/phpunit": "^11.3.6",
+        "spatie/laravel-ignition": "^2.8.0",
+        "tightenco/duster": "^3.0.1"
     },
     "autoload": {
         "files": [
-            "app/helpers.php",
-            "app/Helpers/TimeZoneHelper.php"
+            "app/helpers.php"
         ],
         "psr-4": {
             "App\\": "app/",
@@ -65,7 +64,6 @@
         ],
         "post-update-cmd": [
             "@php artisan vendor:publish --tag=laravel-assets --ansi --force",
-            "@php artisan filament:upgrade",
             "@php artisan ide-helper:generate",
             "@php artisan ide-helper:meta"
         ],
@@ -79,7 +77,6 @@
     "extra": {
         "laravel": {
             "dont-discover": [
-                "barryvdh/laravel-ide-helper",
                 "laravel/telescope"
             ]
         }
@@ -87,7 +84,7 @@
     "config": {
         "optimize-autoloader": true,
         "platform": {
-            "php": "8.2"
+            "php": "8.3"
         },
         "preferred-install": "dist",
         "sort-packages": true,
@@ -96,6 +93,6 @@
             "php-http/discovery": true
         }
     },
-    "minimum-stability": "stable",
+    "minimum-stability": "dev",
     "prefer-stable": true
 }

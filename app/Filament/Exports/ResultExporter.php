@@ -30,6 +30,18 @@ class ResultExporter extends Exporter
                     return $record->ip_address;
                 })
                 ->enabledByDefault(false),
+            ExportColumn::make('isp')
+                ->label('ISP')
+                ->state(function (Result $record): ?string {
+                    return $record->isp;
+                })
+                ->enabledByDefault(false),
+            ExportColumn::make('server_location')
+                ->label('Server Location')
+                ->state(function (Result $record): ?string {
+                    return $record->server_location;
+                })
+                ->enabledByDefault(false),
             ExportColumn::make('service'),
             ExportColumn::make('server_id')
                 ->label('Server ID')
@@ -52,6 +64,7 @@ class ResultExporter extends Exporter
                     return $record->upload_bits;
                 }),
             ExportColumn::make('ping'),
+            ExportColumn::make('packet_loss'),
             ExportColumn::make('download_jitter')
                 ->state(function (Result $record): ?string {
                     return $record->download_jitter;
@@ -63,6 +76,30 @@ class ResultExporter extends Exporter
             ExportColumn::make('ping_jitter')
                 ->state(function (Result $record): ?string {
                     return $record->ping_jitter;
+                }),
+            ExportColumn::make('upload_latency_high')
+                ->state(function (Result $record): ?string {
+                    return $record->upload_latency_high;
+                }),
+            ExportColumn::make('upload_latency_low')
+                ->state(function (Result $record): ?string {
+                    return $record->upload_latency_low;
+                }),
+            ExportColumn::make('upload_latency_avg')
+                ->state(function (Result $record): ?string {
+                    return $record->upload_latency_iqm;
+                }),
+            ExportColumn::make('download_latency_high')
+                ->state(function (Result $record): ?string {
+                    return $record->download_latency_high;
+                }),
+            ExportColumn::make('download_latency_low')
+                ->state(function (Result $record): ?string {
+                    return $record->download_latency_low;
+                }),
+            ExportColumn::make('download_latency_avg')
+                ->state(function (Result $record): ?string {
+                    return $record->download_latency_iqm;
                 }),
             ExportColumn::make('comments')
                 ->enabledByDefault(false),

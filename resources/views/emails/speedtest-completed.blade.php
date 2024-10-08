@@ -1,10 +1,28 @@
 <x-mail::message>
-# Speedtest Result #{{ $id }} - Completed
+# Speedtest Completed - #{{ $id }}
 
-A speedtest was successfully run, click the button below to view the results.
+A new speedtest was completed using **{{ $service }}**.
+
+<x-mail::table>
+| **Metric**  | **Value**                  |
+|:------------|---------------------------:|
+| Server name | {{ $serverName }}          |
+| Server ID   | {{ $serverId }}            |
+| ISP         | {{ $isp }}                 |
+| Ping        | {{ $ping }}                |
+| Download    | {{ $download }}            |
+| Upload      | {{ $upload }}              |
+| Packet Loss | {{ $packetLoss }} **%**    |
+
+
+</x-mail::table>
 
 <x-mail::button :url="$url">
 View Results
+</x-mail::button>
+
+<x-mail::button :url="$speedtest_url">
+View Results on Ookla
 </x-mail::button>
 
 Thanks,<br>

@@ -39,8 +39,8 @@ class GetLatestController extends Controller
                 'url' => $latest->result_url,
                 'scheduled' => $latest->scheduled,
                 'failed' => $latest->status === ResultStatus::Failed,
-                'created_at' => $latest->created_at->toISOString(true),
-                'updated_at' => $latest->updated_at->toISOString(true),
+                'created_at' => $latest->created_at->timezone(config('app.display_timezone'))->toISOString(true),
+                'updated_at' => $latest->updated_at->timezone(config('app.display_timezone'))->toISOString(true),
             ],
         ]);
     }
